@@ -1,5 +1,11 @@
+import java.util.ArrayList;
 
 class Player {
+
+    // the array stores each bird's observation list
+    private ArrayList<ArrayList<Integer>> observationOfAll = new ArrayList<>();
+    private Boolean[] birdsAlive;
+    private ArrayList<HMM> hmms = new ArrayList<>();
 
     public Player() {
     }
@@ -26,11 +32,50 @@ class Player {
          */
         System.out.println("get Num new Turn = "+ pState.getNumNewTurns());
 
-        // This line chooses not to shoot.
-        return cDontShoot;
+        int birdAmount = pState.getNumBirds();
 
-        // This line would predict that bird 0 will move right and shoot at it.
-        // return Action(0, MOVE_RIGHT);
+        // if it is a new turn
+        if (pState.getNumNewTurns() == 1) {
+            birdsAlive = new Boolean[birdAmount];
+            observationOfAll = new ArrayList<>();
+            hmms = new ArrayList<>();
+            for (int i = 0; i < birdAmount; i++) {
+                birdsAlive[i] = true; // all alive
+                observationOfAll.add(new ArrayList<>());
+            }
+        }
+
+        for (int i = 0; i < birdAmount; i++) {
+            int observation = pState.getBird(i).getLastObservation();
+            if (observation == -1) {
+                birdsAlive[i] = false; // bird i died
+            } else {
+                observationOfAll.get(i).add(observation);
+            }
+        }
+
+        if (pState.getNumNewTurns() >= 51) {
+            if (pState.getNumNewTurns() == 51) {
+                // train the models
+                for (int i = 0; i < birdAmount; i++) {
+                    HMM hmm = new HMM(observationOfAll.get(i));
+                    hmm.modelTrain();
+                    hmms.add(hmm);
+                }
+            }
+
+            for (int i = 0; i < birdAmount; i++) {
+                if (birdsAlive[i]) {
+                    HMM hmm = hmms.get(i);
+                    int movement = hmm.getMostLikelyObservation(observationOfAll.get(i));
+                    // predict that bird i's movement and shoot at it.
+                    return new Action(i, movement);
+                }
+            }
+        }
+
+        // choose not to shoot.
+        return cDontShoot;
     }
 
     /**
