@@ -26,6 +26,7 @@ public class HMMmodel {
                 emiMatrix[i][k] = 1.0 / emiColNum;
         }
     }
+
     private void trainModel()
     {
         int seqNum = obserSeq.length;
@@ -191,7 +192,47 @@ public class HMMmodel {
         }
 
     }
+    public int nextMovementPredict()
+    {
+        int tranRowNum = tranMatrix.length;
+        int tranColNum = tranMatrix[0].length;
+        int iniColNum = iniMatrix.length;
+        int emiColNum = emiMatrix[0].length;
 
+        double[] X2Prob = new double[iniColNum];
+
+        for(int i = 0; i < tranColNum; i++)
+        {
+            for(int j = 0; j < tranRowNum; j++){
+                //System.out.print(tranMatrix[j][i]+" ");
+                X2Prob[i] = X2Prob[i] + (iniMatrix[j] * tranMatrix[j][i]);
+            }
+        }
+        double[] output = new double[emiColNum];
+        System.out.print(1 + " "+emiColNum+" ");
+        for(int i = 0; i < emiColNum; i++)
+        {
+            for(int j = 0; j < X2Prob.length; j++)
+            {
+                output[i] += X2Prob[j] * emiMatrix[j][i];
+
+            }
+            System.out.print(output[i]);
+            if(i != emiColNum-1)
+                System.out.print(" ");
+        }
+        double max = 0.0;
+        int index = 0;
+        for(int i = 0; i < output.length; i++)
+        {
+            if(output[i] > max)
+            {
+                max = output[i];
+                index = i;
+            }
+        }
+        return index;
+    }
 
     public double[][] getTranMatrix()
     {
