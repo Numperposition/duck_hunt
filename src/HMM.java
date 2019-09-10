@@ -9,93 +9,88 @@ public class HMM {
     private Double[][] A;
     private Double[][] B;
     private Double[] pi;
-    private ArrayList<Integer> emissionsArr;
-    private static final int patternAmount = 5;
-    private static final int moveAmount = Constants.COUNT_MOVE;
+    private Integer[] observation = new Integer[100];
+    private static final int N = 5; // number of states
+    private static final int M = 9; // number of observation types
+    private static final Double threshold = 4e-16;
+    private int T = 0; // length of the observation sequence
+    private int species = Constants.SPECIES_UNKNOWN;
 
-    public HMM(ArrayList<Integer> emissionsArr) {
-        this.emissionsArr = emissionsArr;
-    }
-
-    private Double[] randomInit(int length) {
-        Double[] result = new Double[length];
-        Double sum = 0.0;
-
-        for (int i = 0; i < length; i++) {
-            result[i] = Math.random() / length * 2;
-            sum += result[i];
-        }
-
-        for (int i = 0; i < length; i++) {
-            result[i] = result[i] / sum; // ensure all result[i] adds up to 1
-        }
-
-        return result;
+    public HMM() {
+        this.init();
     }
 
     // 1. Initialization
     private void init() {
-        A = new Double[patternAmount][patternAmount];
-        B = new Double[patternAmount][moveAmount];
-        pi = new Double[patternAmount];
+        A = new Double[N][N];
+        B = new Double[N][M];
+        pi = new Double[N];
 
-        Double[] randomPi = this.randomInit(patternAmount);
-        for (int i = 0; i < patternAmount; i++) {
-            this.pi[i] = randomPi[i];
+        Double INIT_A = 0.28; // initialization key value of A
+        Double INIT_B = 0.0703; // initialization key value of B
 
-            Double[] randomA = this.randomInit(patternAmount);
-            for (int j = 0; j < patternAmount; j++) {
-                this.A[i][j] = randomA[j];
+        for (int i = 0; i < N; i++) {
+            pi[i] = 1.0 / N;
+            for (int j = 0; j < N; j++) {
+                if (j == i) {
+                    A[i][j] = 1.0 - (N - 1) * INIT_A;
+                    ;
+                } else {
+                    A[i][j] = INIT_A;
+                }
             }
-
-            Double[] randomB = this.randomInit(moveAmount);
-            for (int j = 0; j < moveAmount; j++) {
-                this.B[i][j] = randomB[j];
+            for (int j = 0; j < M; j++) {
+                if (j == i) {
+                    B[i][j] = 1.0 - (M - 1) * INIT_B;
+                } else {
+                    B[i][j] = INIT_B;
+                }
             }
+        }
+
+        pi[0] = 0.40547;
+        pi[1] = 0.29453;
+        pi[2] = 0.3;
+
+        B[0][2] += 0.0002;
+        B[0][4] -= 0.0002;
+        B[1][5] += 0.0001;
+        B[1][6] -= 0.0001;
+        B[2][5] += 0.00025;
+        B[2][6] -= 0.00025;
+
+        for (int i = 0; i < observation.length; i++) {
+            observation[i] = 0;
         }
     }
 
-    public void modelTrain() {
-        this.init();
+    public void modelTrain(Bird bird, int species) {
+        T = 0;
+        for (int i = 0; i < bird.getSeqLength(); i++) {
+            observation[i] = bird.getObservation(i);
+            if (observation[i] != -1) {
+                T++;
+            } else {
+                break;
+            }
+        }
 
-        int maxIters = 50;
+        int maxIters = 200;
         int iters = 0;
-        Double oldLogProb = Double.NEGATIVE_INFINITY;
+        Double oldLogProb = -1e5;
+        Double logProb = -1e4;
 
-        Double logProb = BaumWelch(emissionsArr);
-        while (iters < maxIters && logProb > oldLogProb) {
+        while (iters < maxIters && (logProb - oldLogProb) > 0.00008312) {
             iters++;
             oldLogProb = logProb;
-            logProb = BaumWelch(emissionsArr);
+            logProb = BaumWelch(observation);
         }
 
-//        StringBuilder stringBuilder = new StringBuilder();
-//        stringBuilder.append(A.length).append(" ").append(A[0].length).append(" ");
-//        for (int i = 0; i < A.length; i++) {
-//            for (int j = 0; j < A[0].length; j++) {
-//                stringBuilder.append(A[i][j]).append(" ");
-//            }
-//        }
-//        String strA = stringBuilder.toString().trim();
-//
-//        stringBuilder = new StringBuilder();
-//        stringBuilder.append(B.length).append(" ").append(B[0].length).append(" ");
-//        for (int i = 0; i < B.length; i++) {
-//            for (int j = 0; j < B[0].length; j++) {
-//                stringBuilder.append(B[i][j]).append(" ");
-//            }
-//        }
-//        String strB = stringBuilder.toString().trim();
-//
-//        System.out.println(strA);
-//        System.out.println(strB);
+        this.species = species;
+//        return this;
     }
 
-    private Double BaumWelch(ArrayList<Integer> emissionsArr) {
-        int N = this.A.length;
-        int M = this.B[0].length;
-        int T = emissionsArr.size();
-
+    private Double BaumWelch(Integer[] emissionsArr) {
         /// 2. The α-pass
         Double[][] alpha = new Double[T][N];
 
@@ -103,7 +98,7 @@ public class HMM {
         Double[] c = new Double[T];
         c[0] = 0.0;
         for (int i = 0; i < N; i++) {
-            alpha[0][i] = this.pi[i] * this.B[i][emissionsArr.get(0)];
+            alpha[0][i] = this.pi[i] * this.B[i][emissionsArr[0]];
             c[0] += alpha[0][i];
         }
 
@@ -121,7 +116,7 @@ public class HMM {
                 for (int j = 0; j < N; j++) {
                     alpha[t][i] += alpha[t - 1][j] * this.A[j][i];
                 }
-                alpha[t][i] *= this.B[i][emissionsArr.get(t)];
+                alpha[t][i] *= this.B[i][emissionsArr[0]];
                 c[t] += alpha[t][i];
             }
             // scale αt(i)
@@ -144,7 +139,7 @@ public class HMM {
             for (int i = 0; i < N; i++) {
                 beta[t][i] = 0.0;
                 for (int j = 0; j < N; j++) {
-                    beta[t][i] += this.A[i][j] * this.B[j][emissionsArr.get(t + 1)]
+                    beta[t][i] += this.A[i][j] * this.B[j][emissionsArr[t + 1]]
                             * beta[t + 1][j];
                 }
                 beta[t][i] *= c[t];
@@ -159,7 +154,7 @@ public class HMM {
             Double denom = 0.0;
             for (int i = 0; i < N; i++) {
                 for (int j = 0; j < N; j++) {
-                    denom += alpha[t][i] * this.A[i][j] * this.B[j][emissionsArr.get(t + 1)]
+                    denom += alpha[t][i] * this.A[i][j] * this.B[j][emissionsArr[t + 1]]
                             * beta[t + 1][j];
                 }
             }
@@ -167,7 +162,7 @@ public class HMM {
                 gamma[t][i] = 0.0;
                 for (int j = 0; j < N; j++) {
                     di_gamma[t][i][j] = (alpha[t][i] * this.A[i][j] *
-                            this.B[j][emissionsArr.get(t + 1)] * beta[t + 1][j]) / denom;
+                            this.B[j][emissionsArr[t + 1]] * beta[t + 1][j]) / denom;
                     gamma[t][i] += di_gamma[t][i][j];
                 }
             }
@@ -197,6 +192,9 @@ public class HMM {
                     denom += gamma[t][i];
                 }
                 this.A[i][j] = numer / denom;
+                if (A[i][j] < threshold) {
+                    A[i][j] = threshold;
+                }
             }
         }
 
@@ -206,12 +204,15 @@ public class HMM {
                 Double numer = 0.0;
                 denom = 0.0;
                 for (int t = 0; t < T; t++) {
-                    if (emissionsArr.get(t) == j) {
+                    if (emissionsArr[t] == j) {
                         numer += gamma[t][i];
                     }
                     denom += gamma[t][i];
                 }
                 this.B[i][j] = numer / denom;
+                if (B[i][j] < threshold) {
+                    B[i][j] = threshold;
+                }
             }
         }
 
@@ -225,83 +226,68 @@ public class HMM {
         return logProb;
     }
 
-    public Double[][] getA() {
-        return A;
-    }
-
-    public Double[][] getB() {
-        return B;
-    }
-
-    public Double[] getPi() {
-        return pi;
-    }
-
-
-    public int getMostLikelyObservation(ArrayList<Integer> observations) {
-        int firstEmission = observations.get(0);
-        Double[][] initPossibility = new Double[1][patternAmount];
-        for (int i = 0; i < A.length; i++) {
-            initPossibility[0][i] = B[i][firstEmission] * pi[i];
+    /**
+     * return the possibility of next movement MOVEMENT given observation OBSERVATION
+     *
+     * @param bird     Bird
+     * @param movement int
+     * @return Double
+     */
+    public Double getProb(Bird bird, int movement) {
+        T = bird.getSeqLength();
+        for (int i = 0; i < T; i++) {
+            observation[i] = bird.getObservation(i);
+        }
+        if (movement != -1) {
+            observation[T] = movement;
+            T++;
         }
 
-        Double[][] finalPossibility = initPossibility;
-        for (int i = 0; i < observations.size() - 1; i++) {
-            finalPossibility = this.forwardOneStep(finalPossibility, observations.get(i + 1));
+        /// 2. The α-pass
+        Double[][] alpha = new Double[T][N];
+
+        // compute α0(i)
+        Double[] c = new Double[T];
+        c[0] = 0.0;
+        for (int i = 0; i < N; i++) {
+            alpha[0][i] = this.pi[i] * this.B[i][observation[0]];
+            c[0] += alpha[0][i];
         }
 
-        Double maxPossibility = 0.0;
-        int mostLikelyObservation = 0;
-        for (int i = 0; i < Constants.COUNT_MOVE; i++) {
-            finalPossibility = this.forwardOneStep(finalPossibility, i);
-            Double possibility = 0.0;
-            for (int j = 0; j < patternAmount; j++) {
-                possibility += finalPossibility[0][j];
-            }
-            if (possibility > maxPossibility) {
-                maxPossibility = possibility;
-                mostLikelyObservation = i;
-            }
+        // scale the α0(i)
+        c[0] = 1 / c[0];
+        for (int i = 0; i < N; i++) {
+            alpha[0][i] *= c[0];
         }
 
-        return mostLikelyObservation;
-    }
-
-    private Double[][] forwardOneStep(Double[][] initPossibility, int emission) {
-        Double[][] nextInitPossibility = new Double[1][patternAmount];
-
-        Double[][] predictedA = this.matrixMultiply(initPossibility, A);
-        Double[][] emissionMatrix = new Double[1][patternAmount];
-        for (int i = 0; i < patternAmount; i++) {
-            emissionMatrix[0][i] = B[i][emission];
-        }
-
-        for (int i = 0; i < patternAmount; i++) {
-            nextInitPossibility[0][i] = emissionMatrix[0][i] * predictedA[0][i];
-        }
-
-        return nextInitPossibility;
-    }
-
-    private Double[][] matrixMultiply(Double[][] x, Double[][] y) {
-        int result_row = x.length;
-        int result_line = y[0].length;
-        Double[][] result = new Double[result_row][result_line];
-
-        for (int i = 0; i < result_row; i++) {
-            for (int j = 0; j < result_line; j++) {
-                result[i][j] = 0.0;
-            }
-        }
-
-        for (int i = 0; i < result_row; i++) {
-            for (int j = 0; j < result_line; j++) {
-                for (int k = 0; k < y.length; k++) {
-                    result[i][j] += x[i][k] * y[k][j];
+        // compute αt(i)
+        for (int t = 1; t < T; t++) {
+            c[t] = 0.0;
+            for (int i = 0; i < N; i++) {
+                alpha[t][i] = 0.0;
+                for (int j = 0; j < N; j++) {
+                    alpha[t][i] += alpha[t - 1][j] * this.A[j][i];
                 }
+                alpha[t][i] *= this.B[i][observation[0]];
+                c[t] += alpha[t][i];
+            }
+            // scale αt(i)
+            c[t] = 1 / c[t];
+            for (int i = 0; i < N; i++) {
+                alpha[t][i] *= c[t];
             }
         }
-        return result;
+
+        Double logProb = 0.0;
+        for (int i = 0; i < T; i++) {
+            logProb += Math.log(c[i]);
+        }
+
+        return logProb;
+    }
+
+    public int getSpecies() {
+        return species;
     }
 
 }
