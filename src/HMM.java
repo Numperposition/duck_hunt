@@ -30,7 +30,6 @@ public class HMM {
         Double INIT_B = 0.0703; // initialization key value of B
 
         for (int i = 0; i < N; i++) {
-            pi[i] = 1.0 / N;
             for (int j = 0; j < N; j++) {
                 if (j == i) {
                     A[i][j] = 1.0 - (N - 1) * INIT_A;
@@ -48,9 +47,11 @@ public class HMM {
             }
         }
 
-        pi[0] = 0.40547;
-        pi[1] = 0.29453;
-        pi[2] = 0.3;
+        pi[0] = 0.2042;
+        pi[1] = 0.19453;
+        pi[2] = 0.2;
+        pi[3] = 0.20345;
+        pi[4] = 0.19782;
 
         B[0][2] += 0.0002;
         B[0][4] -= 0.0002;
