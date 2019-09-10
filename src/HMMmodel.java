@@ -2,17 +2,16 @@ public class HMMmodel {
     private double[][] tranMatrix;
     private double[][]  emiMatrix;
     private double[] iniMatrix;
-    private int[] obserSeq;
+    //private int[] obserSeq;
+    private  static final int  stateNum = 5;
+    private static final int emiColNum = 9;
 
-    public HMMmodel(int tranRowNum, int tranColNum, int emiRowNum, int emiColNum, Bird bird)
+
+    public HMMmodel()
     {
-        //tranMatrix = new double[tranRowNum][tranColNum];
-        //emiMatrix = new double[emiRowNum][emiColNum];
-        iniMatrix = new double[tranColNum];
-        obserSeq = new int[bird.getSeqLength()];
-        //initial observation sequence
-        for(int i = 0; i <= bird.getLastObservation(); i++)
-            obserSeq[i] = bird.getObservation(i);
+
+        iniMatrix = new double[stateNum];
+//
 
         //initialize A,B,pai
         tranMatrix = new double[][] {{0.8, 0.05, 0.05, 0.05, 0.05},
@@ -26,29 +25,26 @@ public class HMMmodel {
                 {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
                 {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
 
-        for(int i = 0; i < tranColNum-1; i++) {
-            iniMatrix[i] = 1.0/tranColNum+(Math.random()-0.5)/100;
+        for(int i = 0; i < stateNum-1; i++) {
+            iniMatrix[i] = 1.0/stateNum+(Math.random()-0.5)/100;
         }
-//        for(int i = 0; i < tranRowNum; i++)
-//        {
-//            iniMatrix[i] = 1.0 / tranRowNum;
-//            for(int j = 0; j < tranColNum; j++)
-//            {
-//                tranMatrix[i][j] = 1.0 / tranColNum;
-//            }
-//            for(int k = 0; k < emiColNum; k++)
-//                emiMatrix[i][k] = 1.0 / emiColNum;
-//        }
+
+
     }
 
-    public void trainModel()
+    public void trainModel(Bird bird)
     {
+        int[] obserSeq = getObserSeq(bird);
         int seqNum = obserSeq.length;
         int tranRowNum = tranMatrix.length;
         int tranColNum = tranMatrix[0].length;
         int iniColNum = iniMatrix.length;
         int emiColNum = emiMatrix[0].length;
-        int emiRowNum = tranColNum;
+        //int emiRowNum = tranColNum;
+        obserSeq = new int[bird.getSeqLength()];
+//        //initial observation sequence
+        for(int i = 0; i <= bird.getLastObservation(); i++)
+            obserSeq[i] = bird.getObservation(i);
 
         for(int loop = 0; loop < 50; loop++)
         {
@@ -207,7 +203,70 @@ public class HMMmodel {
 
     }
 
-    public int[] predictState()
+    public int[] getObserSeq(Bird bird)
+    {
+        int seqNum = bird.getSeqLength();
+        int[] obserSeq = new int[seqNum];
+        for(int i = 0; i < obserSeq.length; i++)
+            obserSeq[i] = bird.getObservation(i);
+        return obserSeq;
+    }
+    public int[] getObserSeq(Bird bird, int movement)
+    {
+        int seqNum = bird.getSeqLength() + 1;
+        int[] obserSeq = new int[seqNum];
+        for(int i = 0; i < obserSeq.length-1; i++)
+            obserSeq[i] = bird.getObservation(i);
+        obserSeq[seqNum-1] = movement;
+        return obserSeq;
+    }
+
+    public double calculateProb(int[] obserSeq)
+    {
+        //int[] obserSeq = getObserSeq(bird);
+        int seqNum = obserSeq.length;
+        double[][] alfa = new double[seqNum][stateNum];
+        double[] alfaScale = new double[seqNum];
+
+        alfaScale[0] = 0;
+        //initial alfa matrix
+        for(int i = 0; i < stateNum; i++)
+        {
+            alfa[0][i] = iniMatrix[i] * emiMatrix[i][obserSeq[0]];
+            alfaScale[0] += alfa[0][i];
+        }
+
+        for(int i = 0; i < stateNum; i++)
+            alfa[0][i] = alfa[0][i] / alfaScale[0];
+
+        for(int i = 1; i <= seqNum-1; i++)
+        {
+            alfaScale[i] = 0;
+            for(int k = 0; k < tranMatrix.length; k++)
+            {
+                double temp = 0.0;
+                for(int j = 0; j < alfa[0].length; j++)
+                {
+                    //calculate alfa(t-1) * transMix
+                    temp += (alfa[i-1][j] * tranMatrix[j][k]);
+                }
+                alfa[i][k] = temp * emiMatrix[k][obserSeq[i]];
+                alfaScale[i] += alfa[i][k];
+            }
+            //scale alfa
+            for(int v = 0; v < stateNum; v++)
+                alfa[i][v] = alfa[i][v] / alfaScale[i];
+        }
+        double seqProb = 0.0;
+        for(int i = 0; i < alfa[0].length; i++)
+        {
+            //System.out.print(alfa[seqNum-1][i]+" ");
+            seqProb += alfa[seqNum-1][i];
+        }
+        return seqProb;
+    }
+
+    public int[] predictState(int[] obserSeq)
     {
         int tranRowNum = tranMatrix.length;
         int tranColNum = tranMatrix[0].length;
