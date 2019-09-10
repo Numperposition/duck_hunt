@@ -6,8 +6,8 @@ public class HMMmodel {
 
     public HMMmodel(int tranRowNum, int tranColNum, int emiRowNum, int emiColNum, Bird bird)
     {
-        tranMatrix = new double[tranRowNum][tranColNum];
-        emiMatrix = new double[emiRowNum][emiColNum];
+        //tranMatrix = new double[tranRowNum][tranColNum];
+        //emiMatrix = new double[emiRowNum][emiColNum];
         iniMatrix = new double[tranColNum];
         obserSeq = new int[bird.getSeqLength()];
         //initial observation sequence
@@ -15,19 +15,33 @@ public class HMMmodel {
             obserSeq[i] = bird.getObservation(i);
 
         //initialize A,B,pai
-        for(int i = 0; i < tranRowNum; i++)
-        {
-            iniMatrix[i] = 1.0 / tranRowNum;
-            for(int j = 0; j < tranColNum; j++)
-            {
-                tranMatrix[i][j] = 1.0 / tranColNum;
-            }
-            for(int k = 0; k < emiColNum; k++)
-                emiMatrix[i][k] = 1.0 / emiColNum;
+        tranMatrix = new double[][] {{0.8, 0.05, 0.05, 0.05, 0.05},
+                {0.075, 0.7, 0.075, 0.075, 0.075},
+                {0.075, 0.075, 0.7, 0.075, 0.075},
+                {0.075, 0.075, 0.075, 0.7, 0.075},
+                {0.075, 0.075, 0.075, 0.075, 0.7}};
+        emiMatrix = new double[][] {{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
+                {0.36, 0.04, 0.36, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04},
+                {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
+                {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
+                {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
+
+        for(int i = 0; i < tranColNum-1; i++) {
+            iniMatrix[i] = 1.0/tranColNum+(Math.random()-0.5)/100;
         }
+//        for(int i = 0; i < tranRowNum; i++)
+//        {
+//            iniMatrix[i] = 1.0 / tranRowNum;
+//            for(int j = 0; j < tranColNum; j++)
+//            {
+//                tranMatrix[i][j] = 1.0 / tranColNum;
+//            }
+//            for(int k = 0; k < emiColNum; k++)
+//                emiMatrix[i][k] = 1.0 / emiColNum;
+//        }
     }
 
-    private void trainModel()
+    public void trainModel()
     {
         int seqNum = obserSeq.length;
         int tranRowNum = tranMatrix.length;
@@ -166,62 +180,119 @@ public class HMMmodel {
                 }
             }
             // check whether it is converge or not.
-            double logProb = 0;
-            for(int t = 0; t < seqNum; t++)
-            {
-                logProb += Math.log10(alfaScale[t]);
-            }
-            logProb = -logProb;
-            System.out.println(logProb);
+//            double logProb = 0;
+//            for(int t = 0; t < seqNum; t++)
+//            {
+//                logProb += Math.log10(alfaScale[t]);
+//            }
+//            logProb = -logProb;
+//            System.out.println(logProb);
 
         }
-        System.out.print(tranColNum + " " + tranRowNum + " ");
-        for(int i = 0; i < tranColNum; i++){
-            for(int j = 0; j < tranColNum; j++)
-            {
-                System.out.print(tranMatrix[i][j] + " ");
-            }
-        }
-        System.out.println();
-        System.out.print(emiRowNum + " " + emiColNum + " ");
-        for(int i = 0; i < emiRowNum; i++){
-            for(int j = 0; j < emiColNum; j++)
-            {
-                System.out.print(emiMatrix[i][j] + " ");
-            }
-        }
+//        System.out.print(tranColNum + " " + tranRowNum + " ");
+//        for(int i = 0; i < tranColNum; i++){
+//            for(int j = 0; j < tranColNum; j++)
+//            {
+//                System.out.print(tranMatrix[i][j] + " ");
+//            }
+//        }
+//        System.out.println();
+//        System.out.print(emiRowNum + " " + emiColNum + " ");
+//        for(int i = 0; i < emiRowNum; i++){
+//            for(int j = 0; j < emiColNum; j++)
+//            {
+//                System.out.print(emiMatrix[i][j] + " ");
+//            }
+//        }
 
     }
-    public int nextMovementPredict()
+
+    public int[] predictState()
     {
         int tranRowNum = tranMatrix.length;
         int tranColNum = tranMatrix[0].length;
         int iniColNum = iniMatrix.length;
+        //int emiColNum = emiMatrix[0].length;
+        int seqNum = obserSeq.length;
+
+        double[][] delta = new double[seqNum][tranRowNum];
+        int[][] tracks = new int[seqNum][tranRowNum];
+        double max = 0.0;
+        int pt = 0;
+        //initial delta and backward pointer
+        for(int i = 0; i < iniColNum; i++)
+        {
+            delta[0][i] = iniMatrix[i] * emiMatrix[i][obserSeq[0]];
+//
+        }
+        //delta[0] = max;
+        //tracks[0] = pt;
+
+
+        for(int i = 1; i < seqNum; i++)
+        {
+            for(int j = 0; j < tranColNum; j++)
+            {
+                max = 0.0;
+                pt = 0;
+                for(int k = 0; k < tranRowNum; k++)
+                {
+                    double temp = delta[i-1][k] * tranMatrix[k][j] * emiMatrix[j][obserSeq[i]];
+                    if(temp > max)
+                    {
+                        max = temp;
+                        pt = k;
+                    }
+                }
+                delta[i][j] = max;
+                tracks[i][j] = pt;
+            }
+        }
+        max = 0.0;
+        int lastPoint = 0;
+        for(int i = 0; i < tranColNum; i++)
+            if(delta[seqNum-1][i] > max){
+                max = delta[seqNum-1][i];
+                //back track starts with lastPoint.
+                lastPoint = i;
+            }
+        //System.out.print(lastPoint+ " ");
+        int tmp = lastPoint;
+        int[] printArray = new int[seqNum];
+        printArray[seqNum-1] = lastPoint;
+        for(int i = seqNum-1; i >= 1; i--)
+        {
+            tmp = tracks[i][tmp];
+            printArray[i-1] = tmp;
+        }
+        return printArray;
+    }
+
+    public int nextMovementPredict(int[] hiddenStates)
+    {
+        int tranColNum = tranMatrix[0].length;
         int emiColNum = emiMatrix[0].length;
 
-        double[] X2Prob = new double[iniColNum];
-
+        int preHiddenState = hiddenStates[hiddenStates.length-1];
+        double max = 0.0;
+        int state = 0;
         for(int i = 0; i < tranColNum; i++)
         {
-            for(int j = 0; j < tranRowNum; j++){
-                //System.out.print(tranMatrix[j][i]+" ");
-                X2Prob[i] = X2Prob[i] + (iniMatrix[j] * tranMatrix[j][i]);
+            if(tranMatrix[preHiddenState][i] > max)
+            {
+                max = tranMatrix[preHiddenState][i];
+                state = i;
             }
         }
         double[] output = new double[emiColNum];
-        System.out.print(1 + " "+emiColNum+" ");
         for(int i = 0; i < emiColNum; i++)
         {
-            for(int j = 0; j < X2Prob.length; j++)
+            for(int j = 0; j < tranColNum; j++)
             {
-                output[i] += X2Prob[j] * emiMatrix[j][i];
-
+                output[i] += tranMatrix[state][j] * emiMatrix[j][i];
             }
-            System.out.print(output[i]);
-            if(i != emiColNum-1)
-                System.out.print(" ");
         }
-        double max = 0.0;
+        max = 0.0;
         int index = 0;
         for(int i = 0; i < output.length; i++)
         {
