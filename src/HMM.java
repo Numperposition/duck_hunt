@@ -1,8 +1,6 @@
-import java.util.ArrayList;
-
 /**
- * @author Sherley Huang
- * @date 2019/9/9 11:51
+ * @author Yuxuan Huang
+ * @date 2019/9/5 16:05
  */
 public class HMM {
 
@@ -18,47 +16,19 @@ public class HMM {
         this.init();
     }
 
-
-    private void init2() {
-        pi = new double[N];
-        A = new double[N][N];
-        B = new double[N][M];
-
-        for(int i = 0; i < N-1; i++) {
-            pi[i] = 1.0/N+(Math.random()-0.5)/100;
-        }
-
-
-
-        for (int i = 0; i < N; ++i) {
-            for (int j = 0; j < N/2; ++j) {
-                this.A[i][j] = 1.0/N + (Math.random()-0.5)/100;
-            }
-            for(int j = N/2; j < N; j++)
-                this.A[i][j] = Math.abs(1.0/N - (Math.random()-0.5)/100);
-        }
-        for (int i = 0; i < N; ++i) {
-            for (int j = 0; j < M/2; ++j) {
-                this.B[i][j] = 1.0/M + (Math.random()-0.5)/100;
-            }
-            for(int j = M/2; j < M; j++)
-                this.B[i][j] = Math.abs(1.0/M - (Math.random()-0.5)/100);
-        }
-
-    }
     // 1. Initialization
     private void init() {
-        A = new double[][] {{0.2, 0.05, 0.05, 0.05, 0.05},
+        A = new double[][]{{0.2, 0.05, 0.05, 0.05, 0.05},
                 {0.075, 0.7, 0.2, 0.075, 0.075},
                 {0.075, 0.075, 0.7, 0.2, 0.075},
                 {0.075, 0.2, 0.075, 0.7, 0.075},
                 {0.075, 0.075, 0.075, 0.075, 0.2}};
-        B = new double[][] {{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
+        B = new double[][]{{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
                 {0.36, 0.04, 0.36, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04},
                 {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
                 {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
                 {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
-        pi = new double[] {0.2042, 0.19453, 0.2, 0.20345, 0.19782};
+        pi = new double[]{0.2042, 0.19453, 0.2, 0.20345, 0.19782};
 
         for (int i = 0; i < observation.length; i++) {
             observation[i] = 0;
@@ -68,8 +38,8 @@ public class HMM {
     public void modelTrain(Bird bird) {
         T = 0;
         for (int i = 0; i < bird.getSeqLength(); i++) {
-            observation[i] = bird.getObservation(i);
-            if (observation[i] != -1) {
+            if (bird.getObservation(i) != -1) {
+                observation[i] = bird.getObservation(i);
                 T++;
             } else {
                 break;
@@ -89,6 +59,7 @@ public class HMM {
     }
 
     private double BaumWelch(Integer[] emissionsArr) {
+//        int T = emissionsArr.length;
         /// 2. The α-pass
         double[][] alpha = new double[T][N];
 
@@ -121,6 +92,9 @@ public class HMM {
             c[t] = 1 / c[t];
             for (int i = 0; i < N; i++) {
                 alpha[t][i] *= c[t];
+                if (alpha[t][i] < 2e-10) {
+                    alpha[t][i] = 2e-10;
+                }
             }
         }
 
@@ -141,6 +115,9 @@ public class HMM {
                             * beta[t + 1][j];
                 }
                 beta[t][i] *= c[t];
+                if (beta[t][i] < 2e-10) {
+                    beta[t][i] = 2e-10;
+                }
             }
         }
 
@@ -219,9 +196,14 @@ public class HMM {
     }
 
     public double getProb(Bird bird) {
-        T = bird.getSeqLength();
-        for (int i = 0; i < T; i++) {
-            observation[i] = bird.getObservation(i);
+        T = 0;
+        for (int i = 0; i < bird.getSeqLength(); i++) {
+            if (bird.getObservation(i) != -1) {
+                observation[i] = bird.getObservation(i);
+                T++;
+            } else {
+                break;
+            }
         }
 
         double[][] initPossibility = new double[1][N];
@@ -230,8 +212,8 @@ public class HMM {
         }
 
         double[][] finalPossibility = initPossibility;
-        for (int i = 0; i < T - 1; i++) {
-            finalPossibility = forwardOneStep(finalPossibility, observation[i + 1]);
+        for (int i = 1; i < T; i++) {
+            finalPossibility = forwardOneStep(finalPossibility, observation[i]);
         }
 
         double result = 0.0;
@@ -250,7 +232,15 @@ public class HMM {
      * @return Double
      */
     public double getProb(Bird bird, int movement) {
-        T = bird.getSeqLength();
+        T = 0;
+        for (int i = 0; i < bird.getSeqLength(); i++) {
+            if (bird.getObservation(i) != -1) {
+                observation[i] = bird.getObservation(i);
+                T++;
+            } else {
+                return 0.0;
+            }
+        }
         observation[T] = movement;
         T++;
 
@@ -260,8 +250,8 @@ public class HMM {
         }
 
         double[][] finalPossibility = initPossibility;
-        for (int i = 0; i < T - 1; i++) {
-            finalPossibility = forwardOneStep(finalPossibility, observation[i + 1]);
+        for (int i = 1; i < T; i++) {
+            finalPossibility = forwardOneStep(finalPossibility, observation[i]);
         }
 
         double result = 0.0;
