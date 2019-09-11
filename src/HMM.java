@@ -6,15 +6,13 @@ import java.util.ArrayList;
  */
 public class HMM {
 
-    private Double[][] A;
-    private Double[][] B;
-    private Double[] pi;
+    private double[][] A;
+    private double[][] B;
+    private double[] pi;
     private Integer[] observation = new Integer[100];
     private static final int N = 5; // number of states
     private static final int M = 9; // number of observation types
-    private static final Double threshold = 4e-16;
     private int T = 0; // length of the observation sequence
-    private int species = Constants.SPECIES_UNKNOWN;
 
     public HMM() {
         this.init();
@@ -22,50 +20,24 @@ public class HMM {
 
     // 1. Initialization
     private void init() {
-        A = new Double[N][N];
-        B = new Double[N][M];
-        pi = new Double[N];
-
-        Double INIT_A = 0.28; // initialization key value of A
-        Double INIT_B = 0.0703; // initialization key value of B
-
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if (j == i) {
-                    A[i][j] = 1.0 - (N - 1) * INIT_A;
-                    ;
-                } else {
-                    A[i][j] = INIT_A;
-                }
-            }
-            for (int j = 0; j < M; j++) {
-                if (j == i) {
-                    B[i][j] = 1.0 - (M - 1) * INIT_B;
-                } else {
-                    B[i][j] = INIT_B;
-                }
-            }
-        }
-
-        pi[0] = 0.2042;
-        pi[1] = 0.19453;
-        pi[2] = 0.2;
-        pi[3] = 0.20345;
-        pi[4] = 0.19782;
-
-        B[0][2] += 0.0002;
-        B[0][4] -= 0.0002;
-        B[1][5] += 0.0001;
-        B[1][6] -= 0.0001;
-        B[2][5] += 0.00025;
-        B[2][6] -= 0.00025;
+        A = new double[][] {{0.2, 0.05, 0.05, 0.05, 0.05},
+                {0.075, 0.7, 0.2, 0.075, 0.075},
+                {0.075, 0.075, 0.7, 0.2, 0.075},
+                {0.075, 0.2, 0.075, 0.7, 0.075},
+                {0.075, 0.075, 0.075, 0.075, 0.2}};
+        B = new double[][] {{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
+                {0.36, 0.04, 0.36, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04},
+                {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
+                {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
+                {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
+        pi = new double[] {0.2042, 0.19453, 0.2, 0.20345, 0.19782};
 
         for (int i = 0; i < observation.length; i++) {
             observation[i] = 0;
         }
     }
 
-    public void modelTrain(Bird bird, int species) {
+    public void modelTrain(Bird bird) {
         T = 0;
         for (int i = 0; i < bird.getSeqLength(); i++) {
             observation[i] = bird.getObservation(i);
@@ -76,7 +48,7 @@ public class HMM {
             }
         }
 
-        int maxIters = 200;
+        int maxIters = 100;
         int iters = 0;
         Double oldLogProb = -1e5;
         Double logProb = -1e4;
@@ -86,17 +58,14 @@ public class HMM {
             oldLogProb = logProb;
             logProb = BaumWelch(observation);
         }
-
-        this.species = species;
-//        return this;
     }
 
-    private Double BaumWelch(Integer[] emissionsArr) {
+    private double BaumWelch(Integer[] emissionsArr) {
         /// 2. The α-pass
-        Double[][] alpha = new Double[T][N];
+        double[][] alpha = new double[T][N];
 
         // compute α0(i)
-        Double[] c = new Double[T];
+        double[] c = new double[T];
         c[0] = 0.0;
         for (int i = 0; i < N; i++) {
             alpha[0][i] = this.pi[i] * this.B[i][emissionsArr[0]];
@@ -128,7 +97,7 @@ public class HMM {
         }
 
         /// 3. The β-pass
-        Double[][] beta = new Double[T][N];
+        double[][] beta = new double[T][N];
 
         // Let βT−1(i) = 1, scaled by cT−1
         for (int i = 0; i < N; i++) {
@@ -148,11 +117,11 @@ public class HMM {
         }
 
         /// 4. Compute γt(i, j) and γt(i)
-        Double[][] gamma = new Double[T][N];
-        Double[][][] di_gamma = new Double[T][N][N];
+        double[][] gamma = new double[T][N];
+        double[][][] di_gamma = new double[T][N][N];
 
         for (int t = 0; t < T - 1; t++) {
-            Double denom = 0.0;
+            double denom = 0.0;
             for (int i = 0; i < N; i++) {
                 for (int j = 0; j < N; j++) {
                     denom += alpha[t][i] * this.A[i][j] * this.B[j][emissionsArr[t + 1]]
@@ -169,7 +138,7 @@ public class HMM {
             }
         }
         // Special case for γT−1(i)
-        Double denom = 0.0;
+        double denom = 0.0;
         for (int i = 0; i < N; i++) {
             denom += alpha[T - 1][i];
         }
@@ -186,23 +155,20 @@ public class HMM {
         // re-estimate A
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
-                Double numer = 0.0;
+                double numer = 0.0;
                 denom = 0.0;
                 for (int t = 0; t < T - 1; t++) {
                     numer += di_gamma[t][i][j];
                     denom += gamma[t][i];
                 }
                 this.A[i][j] = numer / denom;
-                if (A[i][j] < threshold) {
-                    A[i][j] = threshold;
-                }
             }
         }
 
         // re-estimate B
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < M; j++) {
-                Double numer = 0.0;
+                double numer = 0.0;
                 denom = 0.0;
                 for (int t = 0; t < T; t++) {
                     if (emissionsArr[t] == j) {
@@ -211,20 +177,41 @@ public class HMM {
                     denom += gamma[t][i];
                 }
                 this.B[i][j] = numer / denom;
-                if (B[i][j] < threshold) {
-                    B[i][j] = threshold;
-                }
             }
         }
 
         /// 6. Compute log[P (O | λ)]
-        Double logProb = 0.0;
+        double logProb = 0.0;
         for (int i = 0; i < T; i++) {
             logProb += Math.log(c[i]);
         }
         logProb = 0.0 - logProb;
 
         return logProb;
+    }
+
+    public double getProb(Bird bird) {
+        T = bird.getSeqLength();
+        for (int i = 0; i < T; i++) {
+            observation[i] = bird.getObservation(i);
+        }
+
+        double[][] initPossibility = new double[1][N];
+        for (int i = 0; i < A.length; i++) {
+            initPossibility[0][i] = observation[i] * pi[i];
+        }
+
+        double[][] finalPossibility = initPossibility;
+        for (int i = 0; i < T - 1; i++) {
+            finalPossibility = forwardOneStep(finalPossibility, observation[i + 1]);
+        }
+
+        double result = 0.0;
+        for (int i = 0; i < finalPossibility.length; i++) {
+            result += finalPossibility[0][i];
+        }
+
+        return result;
     }
 
     /**
@@ -234,61 +221,64 @@ public class HMM {
      * @param movement int
      * @return Double
      */
-    public Double getProb(Bird bird, int movement) {
+    public double getProb(Bird bird, int movement) {
         T = bird.getSeqLength();
-        for (int i = 0; i < T; i++) {
-            observation[i] = bird.getObservation(i);
-        }
-        if (movement != -1) {
-            observation[T] = movement;
-            T++;
-        }
+        observation[T] = movement;
+        T++;
 
-        /// 2. The α-pass
-        Double[][] alpha = new Double[T][N];
-
-        // compute α0(i)
-        Double[] c = new Double[T];
-        c[0] = 0.0;
-        for (int i = 0; i < N; i++) {
-            alpha[0][i] = this.pi[i] * this.B[i][observation[0]];
-            c[0] += alpha[0][i];
+        double[][] initPossibility = new double[1][N];
+        for (int i = 0; i < A.length; i++) {
+            initPossibility[0][i] = observation[i] * pi[i];
         }
 
-        // scale the α0(i)
-        c[0] = 1 / c[0];
-        for (int i = 0; i < N; i++) {
-            alpha[0][i] *= c[0];
+        double[][] finalPossibility = initPossibility;
+        for (int i = 0; i < T - 1; i++) {
+            finalPossibility = forwardOneStep(finalPossibility, observation[i + 1]);
         }
 
-        // compute αt(i)
-        for (int t = 1; t < T; t++) {
-            c[t] = 0.0;
-            for (int i = 0; i < N; i++) {
-                alpha[t][i] = 0.0;
-                for (int j = 0; j < N; j++) {
-                    alpha[t][i] += alpha[t - 1][j] * this.A[j][i];
-                }
-                alpha[t][i] *= this.B[i][observation[0]];
-                c[t] += alpha[t][i];
-            }
-            // scale αt(i)
-            c[t] = 1 / c[t];
-            for (int i = 0; i < N; i++) {
-                alpha[t][i] *= c[t];
-            }
+        double result = 0.0;
+        for (int i = 0; i < finalPossibility.length; i++) {
+            result += finalPossibility[0][i];
         }
 
-        Double logProb = 0.0;
-        for (int i = 0; i < T; i++) {
-            logProb += Math.log(c[i]);
-        }
-
-        return logProb;
+        return result;
     }
 
-    public int getSpecies() {
-        return species;
+    private double[][] forwardOneStep(double[][] initPossibility, int emission) {
+        double[][] nextInitPossibility = new double[1][A.length];
+
+        double[][] predictedA = matrixMultiply(initPossibility, A);
+        double[][] emissionMatrix = new double[1][A.length];
+        for (int i = 0; i < A.length; i++) {
+            emissionMatrix[0][i] = B[i][emission];
+        }
+
+        for (int i = 0; i < A.length; i++) {
+            nextInitPossibility[0][i] = emissionMatrix[0][i] * predictedA[0][i];
+        }
+
+        return nextInitPossibility;
+    }
+
+    private double[][] matrixMultiply(double[][] x, double[][] y) {
+        int result_row = x.length;
+        int result_line = y[0].length;
+        double[][] result = new double[result_row][result_line];
+
+        for (int i = 0; i < result_row; i++) {
+            for (int j = 0; j < result_line; j++) {
+                result[i][j] = 0.0;
+            }
+        }
+
+        for (int i = 0; i < result_row; i++) {
+            for (int j = 0; j < result_line; j++) {
+                for (int k = 0; k < y.length; k++) {
+                    result[i][j] += x[i][k] * y[k][j];
+                }
+            }
+        }
+        return result;
     }
 
 }
