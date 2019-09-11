@@ -18,6 +18,34 @@ public class HMM {
         this.init();
     }
 
+
+    private void init2() {
+        pi = new double[N];
+        A = new double[N][N];
+        B = new double[N][M];
+
+        for(int i = 0; i < N-1; i++) {
+            pi[i] = 1.0/N+(Math.random()-0.5)/100;
+        }
+
+
+
+        for (int i = 0; i < N; ++i) {
+            for (int j = 0; j < N/2; ++j) {
+                this.A[i][j] = 1.0/N + (Math.random()-0.5)/100;
+            }
+            for(int j = N/2; j < N; j++)
+                this.A[i][j] = Math.abs(1.0/N - (Math.random()-0.5)/100);
+        }
+        for (int i = 0; i < N; ++i) {
+            for (int j = 0; j < M/2; ++j) {
+                this.B[i][j] = 1.0/M + (Math.random()-0.5)/100;
+            }
+            for(int j = M/2; j < M; j++)
+                this.B[i][j] = Math.abs(1.0/M - (Math.random()-0.5)/100);
+        }
+
+    }
     // 1. Initialization
     private void init() {
         A = new double[][] {{0.2, 0.05, 0.05, 0.05, 0.05},

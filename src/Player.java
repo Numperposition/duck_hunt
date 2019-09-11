@@ -13,17 +13,17 @@ class Player {
 
     /**
      * Shoot!
-     * <p>
+     *
      * This is the function where you start your work.
-     * <p>
+     *
      * You will receive a variable pState, which contains information about all
      * birds, both dead and alive. Each bird contains all past moves.
-     * <p>
+     *
      * The state also contains the scores for all players and the number of
      * time steps elapsed since the last time this function was called.
      *
      * @param pState the GameState object with observations etc
-     * @param pDue   time before which we must have returned
+     * @param pDue time before which we must have returned
      * @return the prediction of a bird we want to shoot at, or cDontShoot to pass
      */
     public Action shoot(GameState pState, Deadline pDue) {
@@ -32,6 +32,32 @@ class Player {
          * This skeleton never shoots.
          */
         int[] lGuess = this.guess(pState, pDue);
+        for(int i = 0; i < pState.getNumBirds(); i++)
+        {
+            Bird bird = pState.getBird(i);
+            if(bird.isDead() || lGuess[i] == Constants.SPECIES_BLACK_STORK)
+                continue;
+            double maxProb = 0.0;
+            double total = 0.0;
+            int movement = 0;
+            for(int k = 0; k < Constants.COUNT_MOVE; k++)
+            {
+                int guessNum = lGuess[i];
+                if(guessNum == -1)
+                    guessNum = (int)Math.random() * 5;
+                for(int j = 0; j < hmms[guessNum].size(); j++)
+                {
+                    total += hmms[guessNum].get(j).getProb(bird, k);
+                }
+                if(total > maxProb)
+                {
+                    maxProb = total;
+                    movement = k;
+                }
+            }
+            return new Action(i, movement);
+
+        }
 
 
         return cDontShoot;
@@ -43,12 +69,12 @@ class Player {
      * Guess the species!
      * This function will be called at the end of each round, to give you
      * a chance to identify the species of the birds for extra points.
-     * <p>
+     *
      * Fill the vector with guesses for the all birds.
      * Use SPECIES_UNKNOWN to avoid guessing.
      *
      * @param pState the GameState object with observations etc
-     * @param pDue   time before which we must have returned
+     * @param pDue time before which we must have returned
      * @return a vector with guesses for all the birds
      */
     public int[] guess(GameState pState, Deadline pDue) {
@@ -78,16 +104,21 @@ class Player {
             for (int i = 0; i < birdAmount; i++) {
                 double maxPro = 0.0;
                 int speciesGuess = Constants.SPECIES_UNKNOWN;
-
+                Bird bird = pState.getBird(i);
+                if(bird.getLastObservation() == -1)
+                    continue;
                 for (int j = 0; j < Constants.COUNT_SPECIES; j++) {
                     for (int k = 0; k < hmms[j].size(); k++) {
-                        Bird bird = pState.getBird(i);
+
+                       // int[] obserSeq = hmms[j].get(k).getObserSeq(bird);
+
                         double possibility = hmms[j].get(k).getProb(bird);
                         if (possibility > maxPro) {
                             maxPro = possibility;
                             speciesGuess = j;
                         }
                     }
+
                 }
 //                System.err.print(maxPro + " ");
 //                if (maxPro > 0.3)
@@ -110,8 +141,8 @@ class Player {
      * through this function.
      *
      * @param pState the GameState object with observations etc
-     * @param pBird  the bird you hit
-     * @param pDue   time before which we must have returned
+     * @param pBird the bird you hit
+     * @param pDue time before which we must have returned
      */
     public void hit(GameState pState, int pBird, Deadline pDue) {
         System.err.println("HIT BIRD!!!");
@@ -121,9 +152,9 @@ class Player {
      * If you made any guesses, you will find out the true species of those
      * birds through this function.
      *
-     * @param pState   the GameState object with observations etc
+     * @param pState the GameState object with observations etc
      * @param pSpecies the vector with species
-     * @param pDue     time before which we must have returned
+     * @param pDue time before which we must have returned
      */
     public void reveal(GameState pState, int[] pSpecies, Deadline pDue) {
 //        System.err.print("SPECIES: ");

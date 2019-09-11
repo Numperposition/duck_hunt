@@ -11,25 +11,90 @@ public class HMMmodel {
     {
 
         iniMatrix = new double[stateNum];
-//
+        tranMatrix = new double[stateNum][stateNum];
+        emiMatrix = new double[stateNum][emiColNum];
+
+        for (int i = 0; i < stateNum; ++i) {
+            for (int j = 0; j < stateNum; ++j) {
+                this.tranMatrix[i][j] = 1000 + Math.random()*10000;
+//        this.A[i][j] = Math.random()*(0.9-0.1)+0.1;
+                // A[i][j] = 3 + Math.random()*(0.09-0.01)+0.01;
+                //  if (i == j)
+                //   A[i][j] += 100 * numberOfStates;
+            }
+        }
+
+        this.tranMatrix= normalize(tranMatrix);
+
+
+        for (int i = 0; i < stateNum; ++i) {
+            for (int j = 0; j < emiColNum; ++j) {
+                this.emiMatrix[i][j] = 1000 + Math.random()*500;
+//        this.B[i][j] = Math.random()*(0.9-0.1)+0.1;
+                // B[i][j] = 3 + Math.random()*(0.09-0.01)+0.01;
+                //if (i == j)
+                // B[i][j] += 100 * numberOfStates;
+                //if(j >= numberOfStates)
+                // B[i][j] += 10;
+            }
+        }
+
+        this.emiMatrix = normalize(emiMatrix);
+
 
         //initialize A,B,pai
-        tranMatrix = new double[][] {{0.8, 0.05, 0.05, 0.05, 0.05},
-                {0.075, 0.7, 0.075, 0.075, 0.075},
-                {0.075, 0.075, 0.7, 0.075, 0.075},
-                {0.075, 0.075, 0.075, 0.7, 0.075},
-                {0.075, 0.075, 0.075, 0.075, 0.7}};
-        emiMatrix = new double[][] {{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
-                {0.36, 0.04, 0.36, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04},
-                {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
-                {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
-                {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
+//        tranMatrix = new double[][] {{0.8, 0.05, 0.05, 0.05, 0.05},
+//                {0.075, 0.7, 0.075, 0.075, 0.075},
+//                {0.075, 0.075, 0.7, 0.075, 0.075},
+//                {0.075, 0.075, 0.075, 0.7, 0.075},
+//                {0.075, 0.075, 0.075, 0.075, 0.7}};
+//        emiMatrix = new double[][] {{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
+//                {0.36, 0.04, 0.36, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04},
+//                {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
+//                {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
+//                {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
 
         for(int i = 0; i < stateNum-1; i++) {
             iniMatrix[i] = 1.0/stateNum+(Math.random()-0.5)/100;
         }
 
 
+    }
+    public double[][] normalize(double m[][]) {
+        double[][] m2 = new double[m.length][m[0].length];
+
+        for (int row = 0; row < m.length; row++) {
+            double sum = sum(m[row]);
+            if (sum != 0)
+                for (int col = 0; col < m[row].length; col++) {
+                    m2[row][col] = m[row][col] / sum;
+                }
+        }
+
+        return m2;
+
+    }
+
+    public static double[] normalize(double[] a) {
+        double sum =0.0;
+        double[] a2 = new double[a.length];
+        for (int i = 0; i < a.length; i++) {
+            sum += a[i];
+        }
+        //System.err.println("SUM "+ sum);
+        for (int i = 0; i < a.length; i++) {
+            a2[i] = a[i] * (1.0 / sum);
+        }
+
+        return a2;
+    }
+
+    public double sum(double[] prob) {
+        double sum = 0;
+        for (double d : prob)
+            sum += d;
+
+        return sum;
     }
 
     public void trainModel(Bird bird)
@@ -45,8 +110,9 @@ public class HMMmodel {
 //        //initial observation sequence
         for(int i = 0; i <= bird.getLastObservation(); i++)
             obserSeq[i] = bird.getObservation(i);
-
-        for(int loop = 0; loop < 50; loop++)
+        double preLogProb = 0.0;
+        double logProb = 0.0;
+        while(true)
         {
             double[][] alfa = new double[seqNum][tranRowNum];
             double[][] beta = new double[seqNum][tranRowNum];
@@ -87,20 +153,7 @@ public class HMMmodel {
             //scale beta[T][i]
             for(int i = 0; i < tranColNum; i++)
                 beta[seqNum-1][i] = 1.0 / alfaScale[seqNum-1];
-            //calculate beta
-//            for(int t = seqNum-2; t >= 0; t--)
-//            {
-//                for(int i = 0; i < tranColNum; i++)
-//                {
-//                    beta[t][i] = 0;
-//                    for(int j = 0; j < tranColNum; j++)
-//                    {
-//                        beta[t][i] = beta[t][i] + tranMatrix[i][j] * emiMatrix[j][obserSeq[t+1]] * beta[t+1][j];
-//                    }
-//                    beta[t][i] = beta[t][i] / alfaScale[t];
-//
-//                }
-//            }
+
             for(int t = 1; t <= seqNum-1; t++) //time series
             {
                 for(int i = 0; i < tranColNum; i++)
@@ -176,13 +229,17 @@ public class HMMmodel {
                 }
             }
             // check whether it is converge or not.
-//            double logProb = 0;
-//            for(int t = 0; t < seqNum; t++)
-//            {
-//                logProb += Math.log10(alfaScale[t]);
-//            }
-//            logProb = -logProb;
-//            System.out.println(logProb);
+
+            preLogProb = logProb;
+            logProb = 0.0;
+            for(int t = 0; t < seqNum; t++)
+            {
+                logProb += Math.log10(alfaScale[t]);
+            }
+            logProb = -logProb;
+            if(Math.abs(preLogProb - logProb) < 0.1)
+                break;
+            System.err.println("logProb = " + logProb);
 
         }
 //        System.out.print(tranColNum + " " + tranRowNum + " ");
@@ -207,7 +264,7 @@ public class HMMmodel {
     {
         int seqNum = bird.getSeqLength();
         int[] obserSeq = new int[seqNum];
-        for(int i = 0; i < obserSeq.length; i++)
+        for(int i = 0; i < seqNum; i++)
             obserSeq[i] = bird.getObservation(i);
         return obserSeq;
     }
