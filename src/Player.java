@@ -40,63 +40,63 @@ class Player {
         // but we may still miss it and lose one point again.
         // If so, we will lose 2 points for the same bird.
         // This is worse than we don't shoot it for the second time.
-        int currentRound = pState.getRound();
-        if (birdsHasShootArr.size() < currentRound + 1) {
-            boolean[] birdsShoot = new boolean[pState.getNumBirds()];
-            for (int i = 0; i < birdsShoot.length; i++) {
-                birdsShoot[i] = true;
-            }
-            birdsHasShootArr.add(birdsShoot);
-        }
-
-        int shootRound = 70;
-        if (pState.getBird(0).getSeqLength() < shootRound) {
-            return cDontShoot;
-        }
-
-        int[] lGuess = this.guess(pState, pDue);
-        double maxProb = 0.0;
-        int movement = Constants.MOVE_DEAD;
-        int birdNum = Constants.SPECIES_UNKNOWN;
-
-        for (int i = 0; i < pState.getNumBirds(); i++) {
-
-        }
-
-        for (int i = 0; i < pState.getNumBirds(); i++) {
-            Bird bird = pState.getBird(i);
-
-            if (!bird.isAlive()) {
-                birdsHasShootArr.get(currentRound)[i] = false;
-            }
-
-            if (lGuess[i] != Constants.SPECIES_UNKNOWN
-                    && lGuess[i] != Constants.SPECIES_BLACK_STORK
-                    && birdsHasShootArr.get(currentRound)[i]
-                    && bird.isAlive()) {
-                ArrayList<HMM> hmmArray = hmms[lGuess[i]];
-
-                for (int j = 0; j < hmmArray.size(); j++) {
-                    for (int k = 0; k < Constants.COUNT_MOVE; k++) {
-                        double possibility = hmmArray.get(j).getProb(bird, k);
-                        if (possibility > maxProb) {
-                            maxProb = possibility;
-                            movement = k;
-                            birdNum = i;
-                        }
-                    }
-                }
-            }
-        }
-//        System.err.println("max pro: " + maxProb);
-
-        if (maxProb > 1e-55) {
-            birdsHasShootArr.get(currentRound)[birdNum] = false;
-            return new Action(birdNum, movement);
-        } else {
-            return cDontShoot;
-        }
-//        return cDontShoot;
+//        int currentRound = pState.getRound();
+//        if (birdsHasShootArr.size() < currentRound + 1) {
+//            boolean[] birdsShoot = new boolean[pState.getNumBirds()];
+//            for (int i = 0; i < birdsShoot.length; i++) {
+//                birdsShoot[i] = true;
+//            }
+//            birdsHasShootArr.add(birdsShoot);
+//        }
+//
+//        int shootRound = 70;
+//        if (pState.getBird(0).getSeqLength() < shootRound) {
+//            return cDontShoot;
+//        }
+//
+//        int[] lGuess = this.guess(pState, pDue);
+//        double maxProb = 0.0;
+//        int movement = Constants.MOVE_DEAD;
+//        int birdNum = Constants.SPECIES_UNKNOWN;
+//
+//        for (int i = 0; i < pState.getNumBirds(); i++) {
+//
+//        }
+//
+//        for (int i = 0; i < pState.getNumBirds(); i++) {
+//            Bird bird = pState.getBird(i);
+//
+//            if (!bird.isAlive()) {
+//                birdsHasShootArr.get(currentRound)[i] = false;
+//            }
+//
+//            if (lGuess[i] != Constants.SPECIES_UNKNOWN
+//                    && lGuess[i] != Constants.SPECIES_BLACK_STORK
+//                    && birdsHasShootArr.get(currentRound)[i]
+//                    && bird.isAlive()) {
+//                ArrayList<HMM> hmmArray = hmms[lGuess[i]];
+//
+//                for (int j = 0; j < hmmArray.size(); j++) {
+//                    for (int k = 0; k < Constants.COUNT_MOVE; k++) {
+//                        double possibility = hmmArray.get(j).getProb(bird, k);
+//                        if (possibility > maxProb) {
+//                            maxProb = possibility;
+//                            movement = k;
+//                            birdNum = i;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+////        System.err.println("max pro: " + maxProb);
+//
+//        if (maxProb > 1e-55) {
+//            birdsHasShootArr.get(currentRound)[birdNum] = false;
+//            return new Action(birdNum, movement);
+//        } else {
+//            return cDontShoot;
+//        }
+        return cDontShoot;
 
 //        int[] lGuess = this.guess(pState, pDue);
 //        for(int i = 0; i < pState.getNumBirds(); i++)
@@ -152,13 +152,6 @@ class Player {
         }
 
         if (pState.getRound() == 0) {
-            lGuess[0] = Constants.SPECIES_RAVEN;
-            lGuess[1] = Constants.SPECIES_PIGEON;
-            lGuess[2] = Constants.SPECIES_RAVEN;
-            lGuess[3] = Constants.SPECIES_RAVEN;
-            lGuess[4] = Constants.SPECIES_SWALLOW;
-            lGuess[5] = Constants.SPECIES_RAVEN;
-            lGuess[6] = Constants.SPECIES_RAVEN;
             return lGuess;
         } else {
             int birdAmount = pState.getNumBirds();
@@ -179,9 +172,8 @@ class Player {
                 }
                 lGuess[i] = speciesGuess;
             }
+            return lGuess;
         }
-
-        return lGuess;
     }
 
     /**
