@@ -38,6 +38,7 @@ class Player {
          * Here you should write your clever algorithms to get the best action.
          * This skeleton never shoots.
          */
+        //return cDontShoot;
         timer++;
 
         if(pState.getRound() > currentRound)
@@ -50,10 +51,10 @@ class Player {
 //            System.err.println();
         }
 
-        if(timer < 100 - pState.getNumBirds())
+        if(timer < 68)//100 - pState.getNumBirds())
             return cDontShoot;
 
-       // System.err.println("round = " + pState.getRound());
+        // System.err.println("round = " + pState.getRound());
         if(pState.getRound() == 0)
             return cDontShoot;
 
@@ -72,11 +73,11 @@ class Player {
             //int[] lGuess = this.guess(pState, pDue);
 
 //            int species = Guess[i];
-            System.err.println("-----bird sequences-----");
-            for(int n = 0; n < bird.getSeqLength(); n++)
-                System.err.print(bird.getObservation(n) + " ");
+//            System.err.println("-----bird sequences-----");
+//            for(int n = 0; n < bird.getSeqLength(); n++)
+//                System.err.print(bird.getObservation(n) + " ");
             int species = getSpecies(bird);
-            if(species == Constants.SPECIES_BLACK_STORK || species == Constants.SPECIES_UNKNOWN)
+            if(species == Constants.SPECIES_BLACK_STORK)
                 continue;
 
             HMM birdHmm = new HMM();
@@ -106,7 +107,7 @@ class Player {
 
         }
         //System.err.println("maxProbAll = " + maxProbAll);
-        //if(maxProbAll >= 0.1)
+        if(maxProbAll >= 0.1)
             return new Action(birdno, bestMovement);
 
 //        for(int i = 0; i < pState.getNumBirds(); i++)
@@ -137,7 +138,7 @@ class Player {
 //        }
 
 
-       // return cDontShoot;
+        return cDontShoot;
 
         // return new Action(0, MOVE_RIGHT);
     }
@@ -150,21 +151,45 @@ class Player {
             obserSeq[i] = bird.getObservation(i);
         }
         double maxProb = 0.0;
-        double prob = 0.0;
+        double[] maxForNormalize = new double[hmms.length];
+        //double prob = 0.0;
         int species = 0;
+        double[] max = new double[hmms.length];
         for(int i = 0; i < hmms.length; i++)
         {
+            double subMax = 0.0;
+            double subProb = 0.0;
+
+            //double total = 0.0;
             for(int j = 0; j < hmms[i].size(); j++)
             {
-                prob = hmms[i].get(j).getProb(bird);
+                subProb = hmms[i].get(j).calculateProb(bird);
+                //total += subProb;
+                if(subProb > subMax)
+                {
+                    subMax = subProb;
+                }
             }
-            if(prob > maxProb)
+            //subMax = subMax / total;
+            max[i] = subProb;
+
+        }
+        double total = 0.0;
+        for(int i = 0; i < max.length; i++)
+            total += max[i];
+
+        for(int i = 0; i < max.length; i++)
+        {
+            //max[i] = max[i] / total;
+            if(max[i] > maxProb)
             {
-                maxProb = prob;
+                maxProb = max[i];
                 species = i;
             }
         }
-        return species;
+        if(maxProb >= 0.5)
+            return species;
+        return 5;
     }
 
     /**
@@ -187,7 +212,7 @@ class Player {
 
         int[] lGuess = new int[pState.getNumBirds()];
         for (int i = 0; i < pState.getNumBirds(); ++i) {
-            lGuess[i] = Constants.SPECIES_SNIPE;
+            lGuess[i] = Constants.SPECIES_PIGEON;
         }
 
         if (pState.getRound() == 0) {
@@ -225,13 +250,13 @@ class Player {
      */
     public void hit(GameState pState, int pBird, Deadline pDue) {
         System.err.println("HIT BIRD!!!");
-        hitNum++;
-        if(pState.getRound() > currentRound2)
-        {
-            System.err.println("round " + currentRound2 + " hit " +hitNum + " birds");
-            currentRound2 = pState.getRound();
-            hitNum = 0;
-        }
+//        hitNum++;
+//        if(pState.getRound() > currentRound2)
+//        {
+//           // System.err.println("round " + currentRound2 + " hit " +hitNum + " birds");
+//            currentRound2 = pState.getRound();
+//            hitNum = 0;
+//        }
     }
 
     /**
@@ -254,7 +279,7 @@ class Player {
                 int species = pSpecies[i];
                 HMM hmm = new HMM();
                 hmm.modelTrain(pState.getBird(i));
-                if (hmms[species].size() < 20)
+                if (hmms[species].size() < 30)
                     hmms[species].add(hmm);
             }
         }

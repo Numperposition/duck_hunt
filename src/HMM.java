@@ -56,11 +56,11 @@ public class HMM {
 //                {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
 //                {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
 //                {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
-        A = new double[][] {{0.8, 0.05, 0.05, 0.05, 0.05},
-                {0.075, 0.7, 0.075, 0.075, 0.075},
-                {0.075, 0.075, 0.7, 0.075, 0.075},
-                {0.075, 0.075, 0.075, 0.7, 0.075},
-                {0.075, 0.075, 0.075, 0.075, 0.7}};
+        A = new double[][]{{0.2024, 0.2142, 0.1945, 0.1924, 0.1965},
+                {0.1923, 0.2351, 0.2, 0.1904, 0.1822},
+                {0.2125, 0.1925, 0.1974, 0.2023, 0.1953},
+                {0.2042, 0.2, 0.1989, 0.1962, 0.2007},
+                {0.1863, 0.1987, 0.1929, 0.2219, 0.2002}};
         B = new double[][] {{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
                 {0.36, 0.04, 0.36, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04},
                 {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
@@ -95,7 +95,8 @@ public class HMM {
         Double oldLogProb = -1e5;
         Double logProb = -1e4;
 
-        while (iters < maxIters && (logProb - oldLogProb) > 0.00008312) {
+        while (iters < maxIters && (logProb - oldLogProb) > 0.00009)  //0.00008312)
+        {
             iters++;
             oldLogProb = logProb;
             logProb = BaumWelch(observation);
@@ -394,7 +395,7 @@ public class HMM {
                 logProb += Math.log10(alfaScale[t]);
             }
             logProb = -logProb;
-            if(Math.abs(logProb-preLogProb) < 0.006)
+            if(Math.abs(logProb-preLogProb) < 0.008)
                 break;
             preLogProb = logProb;
             //System.err.println("logProb = " + logProb);
@@ -488,16 +489,16 @@ public class HMM {
         }
     }
 
-    public double calculateProb(int[] obserSeq)
+    public double calculateProb(Bird bird)
     {
-        //int[] obserSeq = getObserSeq(bird);
+        int[] obserSeq = getObserSeq(bird);
         int seqNum = obserSeq.length;
         double[][] alfa = new double[seqNum][N];
         double[] alfaScale = new double[seqNum];
-        System.err.println("-----A-----");
-        printMatrix(A);
-        System.err.println("-----B-----");
-        printMatrix(B);
+//        System.err.println("-----A-----");
+//        printMatrix(A);
+//        System.err.println("-----B-----");
+//        printMatrix(B);
 
         alfaScale[0] = 0;
         //initial alfa matrix
