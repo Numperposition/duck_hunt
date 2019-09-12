@@ -107,7 +107,7 @@ class Player {
 
         }
         //System.err.println("maxProbAll = " + maxProbAll);
-        if(maxProbAll >= 0.1)
+        if(maxProbAll >= 0.01)
             return new Action(birdno, bestMovement);
 
 //        for(int i = 0; i < pState.getNumBirds(); i++)
@@ -151,39 +151,17 @@ class Player {
             obserSeq[i] = bird.getObservation(i);
         }
         double maxProb = 0.0;
-        double[] maxForNormalize = new double[hmms.length];
-        //double prob = 0.0;
+        double prob = 0.0;
         int species = 0;
-        double[] max = new double[hmms.length];
         for(int i = 0; i < hmms.length; i++)
         {
-            double subMax = 0.0;
-            double subProb = 0.0;
-
-            //double total = 0.0;
             for(int j = 0; j < hmms[i].size(); j++)
             {
-                subProb = hmms[i].get(j).calculateProb(bird);
-                //total += subProb;
-                if(subProb > subMax)
-                {
-                    subMax = subProb;
-                }
+                prob = hmms[i].get(j).calculateProb(bird);
             }
-            //subMax = subMax / total;
-            max[i] = subProb;
-
-        }
-        double total = 0.0;
-        for(int i = 0; i < max.length; i++)
-            total += max[i];
-
-        for(int i = 0; i < max.length; i++)
-        {
-            //max[i] = max[i] / total;
-            if(max[i] > maxProb)
+            if(prob > maxProb)
             {
-                maxProb = max[i];
+                maxProb = prob;
                 species = i;
             }
         }
@@ -279,7 +257,7 @@ class Player {
                 int species = pSpecies[i];
                 HMM hmm = new HMM();
                 hmm.modelTrain(pState.getBird(i));
-                if (hmms[species].size() < 30)
+                if (hmms[species].size() < 20)
                     hmms[species].add(hmm);
             }
         }

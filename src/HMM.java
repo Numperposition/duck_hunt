@@ -1,7 +1,3 @@
-/**
- * @author Yuxuan Huang
- * @date 2019/9/5 16:05
- */
 public class HMM {
 
     private double[][] A;
@@ -95,7 +91,7 @@ public class HMM {
         Double oldLogProb = -1e5;
         Double logProb = -1e4;
 
-        while (iters < maxIters && (logProb - oldLogProb) > 0.00009)  //0.00008312)
+        while (iters < maxIters && (logProb - oldLogProb) > 0.0009)  //0.00008312)
         {
             iters++;
             oldLogProb = logProb;
@@ -479,7 +475,7 @@ public class HMM {
     }
 
 
-        private static void printMatrix(double[][] matrix){
+    private static void printMatrix(double[][] matrix){
         for (int i = 0; i < matrix.length; i++){
             for(int j = 0; j < matrix[0].length; j++)
             {
