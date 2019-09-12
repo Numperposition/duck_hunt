@@ -7,6 +7,9 @@ class Player {
     private int[] Guess;
     private boolean flag = false;
     private int currentRound = 0;
+    private int hitNum = 0;
+
+    private int currentRound2 = 0;
 
     public Player() {
         for (int i = 0; i < Constants.COUNT_SPECIES; i++) {
@@ -36,26 +39,23 @@ class Player {
          * This skeleton never shoots.
          */
         timer++;
-        if(timer < 70)
-        {
-            return cDontShoot;
-        }
-
-        if(timer >= 100)
-            timer = 0;
-
-        if(pState.getRound() == 0)
-            return cDontShoot;
 
         if(pState.getRound() > currentRound)
         {
             currentRound = pState.getRound();
-            Guess = this.guess(pState, pDue);
+//            Guess = this.guess(pState, pDue);
+            timer = 0;
 //            for(int species:Guess)
 //                System.err.print("species:" + species+" ");
 //            System.err.println();
         }
 
+        if(timer < 100 - pState.getNumBirds())
+            return cDontShoot;
+
+       // System.err.println("round = " + pState.getRound());
+        if(pState.getRound() == 0)
+            return cDontShoot;
 
         double maxProbAll = 0.0;
         int bestMovement = 0;
@@ -69,9 +69,12 @@ class Player {
             if(bird.isDead())
                 continue;
 
-            int species = Guess[i];
-//            if(species == Constants.SPECIES_BLACK_STORK)
-//                continue;
+            int[] lGuess = this.guess(pState, pDue);
+
+//            int species = Guess[i];
+            int species = lGuess[i];
+            if(species == Constants.SPECIES_BLACK_STORK || species == Constants.SPECIES_UNKNOWN)
+                continue;
 
             HMM birdHmm = new HMM();
             birdHmm.trainModel(bird);
@@ -99,8 +102,9 @@ class Player {
 
 
         }
-
-        return new Action(birdno, bestMovement);
+        //System.err.println("maxProbAll = " + maxProbAll);
+        //if(maxProbAll >= 0.1)
+            return new Action(birdno, bestMovement);
 
 //        for(int i = 0; i < pState.getNumBirds(); i++)
 //        {
@@ -130,7 +134,7 @@ class Player {
 //        }
 
 
-        //return cDontShoot;
+       // return cDontShoot;
 
         // return new Action(0, MOVE_RIGHT);
     }
@@ -193,6 +197,13 @@ class Player {
      */
     public void hit(GameState pState, int pBird, Deadline pDue) {
         System.err.println("HIT BIRD!!!");
+        hitNum++;
+        if(pState.getRound() > currentRound2)
+        {
+            System.err.println("round " + currentRound2 + " hit " +hitNum + " birds");
+            currentRound2 = pState.getRound();
+            hitNum = 0;
+        }
     }
 
     /**

@@ -16,20 +16,64 @@ public class HMM {
         this.init();
     }
 
+    private void init2() {
+        pi = new double[N];
+        A = new double[N][N];
+        B = new double[N][M];
+
+        for(int i = 0; i < N-1; i++) {
+            pi[i] = 1.0/N+(Math.random()-0.5)/100;
+        }
+
+
+
+        for (int i = 0; i < N; ++i) {
+            for (int j = 0; j < N/2; ++j) {
+                this.A[i][j] = 1.0/N + (Math.random()-0.5)/100;
+            }
+            for(int j = N/2; j < N; j++)
+                this.A[i][j] = Math.abs(1.0/N - (Math.random()-0.5)/100);
+        }
+        for (int i = 0; i < N; ++i) {
+            for (int j = 0; j < M/2; ++j) {
+                this.B[i][j] = 1.0/M + (Math.random()-0.5)/100;
+            }
+            for(int j = M/2; j < M; j++)
+                this.B[i][j] = Math.abs(1.0/M - (Math.random()-0.5)/100);
+        }
+
+    }
+
     // 1. Initialization
     private void init() {
-        A = new double[][]{{0.2, 0.05, 0.05, 0.05, 0.05},
-                {0.075, 0.7, 0.2, 0.075, 0.075},
-                {0.075, 0.075, 0.7, 0.2, 0.075},
-                {0.075, 0.2, 0.075, 0.7, 0.075},
-                {0.075, 0.075, 0.075, 0.075, 0.2}};
-        B = new double[][]{{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
+//        A = new double[][]{{0.2, 0.05, 0.05, 0.05, 0.05},
+//                {0.075, 0.7, 0.2, 0.075, 0.075},
+//                {0.075, 0.075, 0.7, 0.2, 0.075},
+//                {0.075, 0.2, 0.075, 0.7, 0.075},
+//                {0.075, 0.075, 0.075, 0.075, 0.2}};
+//        B = new double[][]{{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
+//                {0.36, 0.04, 0.36, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04},
+//                {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
+//                {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
+//                {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
+        A = new double[][] {{0.8, 0.05, 0.05, 0.05, 0.05},
+                {0.075, 0.7, 0.075, 0.075, 0.075},
+                {0.075, 0.075, 0.7, 0.075, 0.075},
+                {0.075, 0.075, 0.075, 0.7, 0.075},
+                {0.075, 0.075, 0.075, 0.075, 0.7}};
+        B = new double[][] {{0.125, 0.125, 0.125, 0.125, 0.0, 0.125, 0.125, 0.125, 0.125},
                 {0.36, 0.04, 0.36, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04},
                 {0.016, 0.016, 0.016, 0.225, 0.02, 0.225, 0.016, 0.45, 0.016},
                 {0.15, 0.15, 0.15, 0.04, 0.02, 0.04, 0.15, 0.15, 0.15},
                 {0.1125, 0.1125, 0.1125, 0.1125, 0.1, 0.1125, 0.1125, 0.1125, 0.1125}};
-        pi = new double[]{0.2042, 0.19453, 0.2, 0.20345, 0.19782};
 
+        pi = new double[]{0.2042, 0.19453, 0.2, 0.20345, 0.19782};
+//        int sum = 0;
+//        for(int i = 0; i < N-1; i++) {
+//            pi[i] = 1.0/N+(Math.random()-0.5)/100;
+//            sum += pi[i];
+//        }
+//        pi[N-1] = 1 - sum;
         for (int i = 0; i < observation.length; i++) {
             observation[i] = 0;
         }
@@ -218,7 +262,7 @@ public class HMM {
         double preLogProb = 0.0;
         double logProb = 0.0;
         int loop = 0;
-        while(true && loop < 30)
+        while(true) //&& loop < 80)
         {
             loop++;
             double[][] alfa = new double[seqNum][tranRowNum];
@@ -234,8 +278,9 @@ public class HMM {
                 //beta[seqNum-1][i] = 1;
             }
             //scale alfa0(i)
-            for(int i = 0; i < iniColNum; i++)
-                alfa[0][i] = alfa[0][i] / alfaScale[0];
+            if(alfaScale[0] != 0)
+                for(int i = 0; i < iniColNum; i++)
+                    alfa[0][i] = alfa[0][i] / alfaScale[0];
 
             //calculate alfa
             for(int t = 1; t <= seqNum-1; t++) //time series
@@ -253,13 +298,15 @@ public class HMM {
                     alfaScale[t] += alfa[t][i];
                 }
                 //scale alfa
-                for(int i = 0; i < tranColNum; i++)
-                    alfa[t][i] = alfa[t][i] / alfaScale[t];
+                if(alfaScale[t] != 0)
+                    for(int i = 0; i < tranColNum; i++)
+                        alfa[t][i] = alfa[t][i] / alfaScale[t];
 
             }
             //scale beta[T][i]
-            for(int i = 0; i < tranColNum; i++)
-                beta[seqNum-1][i] = 1.0 / alfaScale[seqNum-1];
+            if(alfaScale[seqNum-1] != 0)
+                for(int i = 0; i < tranColNum; i++)
+                    beta[seqNum-1][i] = 1.0 / alfaScale[seqNum-1];
 
             for(int t = 1; t <= seqNum-1; t++) //time series
             {
@@ -269,7 +316,8 @@ public class HMM {
                     {
                         beta[seqNum-t-1][i] += (A[i][j] * beta[seqNum-t][j] * B[j][obserSeq[seqNum-t]]);
                     }
-                    beta[seqNum-t-1][i] = beta[seqNum-t-1][i] / alfaScale[seqNum-t-1];
+                    if(alfaScale[seqNum-t-1] != 0)
+                        beta[seqNum-t-1][i] = beta[seqNum-t-1][i] / alfaScale[seqNum-t-1];
                 }
 
             }
@@ -313,7 +361,8 @@ public class HMM {
                     {
                         digamaSum += digama[t][i][j];
                     }
-                    A[i][j] = digamaSum / gamaSum;
+                    if(gamaSum != 0)
+                        A[i][j] = digamaSum / gamaSum;
                 }
             }
             //update B matrix
@@ -332,7 +381,8 @@ public class HMM {
                         if(j == obserSeq[t])
                             gamaSumOnk += gama[t][i];
                     }
-                    B[i][j] = gamaSumOnk / gamaSum;
+                    if(gamaSum != 0)
+                        B[i][j] = gamaSumOnk / gamaSum;
                 }
             }
             // check whether it is converge or not.
@@ -344,10 +394,10 @@ public class HMM {
                 logProb += Math.log10(alfaScale[t]);
             }
             logProb = -logProb;
-            if(Math.abs(logProb-preLogProb) < 0.0001)
+            if(Math.abs(logProb-preLogProb) < 0.008)
                 break;
             preLogProb = logProb;
-            // System.err.println("logProb = " + logProb);
+            //System.err.println("logProb = " + logProb);
 
         }
 
@@ -360,12 +410,20 @@ public class HMM {
         int[] obserSeq = getObserSeq(bird);
         int seqNum = obserSeq.length;
         double[][] alfa = new double[seqNum][A.length];
+        double sum = 0.0;
         //initial alfa matrix
         for(int i = 0; i < A.length; i++)
+        {
             alfa[0][i] = pi[i] * B[i][obserSeq[0]];
+            sum += alfa[0][i];
+        }
+        if(sum != 0)
+            for(int i = 0; i < N; i++)
+                alfa[0][i] = alfa[0][i] / sum;
 
         for(int i = 1; i <= seqNum-1; i++)
         {
+            sum = 0.0;
             for(int k = 0; k < A.length; k++)
             {
                 double temp = 0.0;
@@ -375,10 +433,14 @@ public class HMM {
                     temp += (alfa[i-1][j] * A[j][k]);
                 }
                 alfa[i][k] = temp * B[k][obserSeq[i]];
+                sum += alfa[i][k];
             }
+            if(sum != 0)
+                for(int k = 0; k < N; k++)
+                    alfa[i][k] = alfa[i][k] / sum;
 
         }
-        return(normalizeVector(alfa[seqNum-1]));
+        return alfa[seqNum-1];   //(normalizeVector(alfa[seqNum-1]));
 
     }
     public double[] getNextEmiState(double[] currentState)
