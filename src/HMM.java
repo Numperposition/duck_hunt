@@ -394,7 +394,7 @@ public class HMM {
                 logProb += Math.log10(alfaScale[t]);
             }
             logProb = -logProb;
-            if(Math.abs(logProb-preLogProb) < 0.008)
+            if(Math.abs(logProb-preLogProb) < 0.006)
                 break;
             preLogProb = logProb;
             //System.err.println("logProb = " + logProb);

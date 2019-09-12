@@ -69,10 +69,13 @@ class Player {
             if(bird.isDead())
                 continue;
 
-            int[] lGuess = this.guess(pState, pDue);
+            //int[] lGuess = this.guess(pState, pDue);
 
 //            int species = Guess[i];
-            int species = lGuess[i];
+            System.err.println("-----bird sequences-----");
+            for(int n = 0; n < bird.getSeqLength(); n++)
+                System.err.print(bird.getObservation(n) + " ");
+            int species = getSpecies(bird);
             if(species == Constants.SPECIES_BLACK_STORK || species == Constants.SPECIES_UNKNOWN)
                 continue;
 
@@ -137,6 +140,31 @@ class Player {
        // return cDontShoot;
 
         // return new Action(0, MOVE_RIGHT);
+    }
+
+    public int getSpecies(Bird bird)
+    {
+        int[] obserSeq = new int[bird.getSeqLength()];
+        for(int i = 0; i < obserSeq.length; i++)
+        {
+            obserSeq[i] = bird.getObservation(i);
+        }
+        double maxProb = 0.0;
+        double prob = 0.0;
+        int species = 0;
+        for(int i = 0; i < hmms.length; i++)
+        {
+            for(int j = 0; j < hmms[i].size(); j++)
+            {
+                prob = hmms[i].get(j).getProb(bird);
+            }
+            if(prob > maxProb)
+            {
+                maxProb = prob;
+                species = i;
+            }
+        }
+        return species;
     }
 
     /**
