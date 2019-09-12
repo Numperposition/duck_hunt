@@ -230,33 +230,20 @@ public class HMMmodel {
             }
             // check whether it is converge or not.
 
-            preLogProb = logProb;
+
             logProb = 0.0;
             for(int t = 0; t < seqNum; t++)
             {
                 logProb += Math.log10(alfaScale[t]);
             }
             logProb = -logProb;
-            if(Math.abs(preLogProb - logProb) < 0.1)
+            if(Math.abs(logProb-preLogProb) < 0.0001)
                 break;
-            System.err.println("logProb = " + logProb);
+            preLogProb = logProb;
+           // System.err.println("logProb = " + logProb);
 
         }
-//        System.out.print(tranColNum + " " + tranRowNum + " ");
-//        for(int i = 0; i < tranColNum; i++){
-//            for(int j = 0; j < tranColNum; j++)
-//            {
-//                System.out.print(tranMatrix[i][j] + " ");
-//            }
-//        }
-//        System.out.println();
-//        System.out.print(emiRowNum + " " + emiColNum + " ");
-//        for(int i = 0; i < emiRowNum; i++){
-//            for(int j = 0; j < emiColNum; j++)
-//            {
-//                System.out.print(emiMatrix[i][j] + " ");
-//            }
-//        }
+
 
     }
 

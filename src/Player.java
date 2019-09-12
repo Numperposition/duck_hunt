@@ -1,10 +1,12 @@
 import java.util.ArrayList;
 
 class Player {
-
     public static final Action cDontShoot = new Action(-1, -1);
     private ArrayList<HMM>[] hmms = new ArrayList[Constants.COUNT_SPECIES];
-    private ArrayList<boolean[]> birdsHasShootArr = new ArrayList<>();
+    private static int timer = 0;
+    private int[] Guess;
+    private boolean flag = false;
+    private int currentRound = 0;
 
     public Player() {
         for (int i = 0; i < Constants.COUNT_SPECIES; i++) {
@@ -15,17 +17,17 @@ class Player {
 
     /**
      * Shoot!
-     * <p>
+     *
      * This is the function where you start your work.
-     * <p>
+     *
      * You will receive a variable pState, which contains information about all
      * birds, both dead and alive. Each bird contains all past moves.
-     * <p>
+     *
      * The state also contains the scores for all players and the number of
      * time steps elapsed since the last time this function was called.
      *
      * @param pState the GameState object with observations etc
-     * @param pDue   time before which we must have returned
+     * @param pDue time before which we must have returned
      * @return the prediction of a bird we want to shoot at, or cDontShoot to pass
      */
     public Action shoot(GameState pState, Deadline pDue) {
@@ -33,72 +35,73 @@ class Player {
          * Here you should write your clever algorithms to get the best action.
          * This skeleton never shoots.
          */
+        timer++;
+        if(timer < 70)
+        {
+            return cDontShoot;
+        }
 
-        // For every bird in every round, we shoot it once.
-        // This is because if we miss one bird, we lose one point.
-        // If we shoot it for the second time, we may hit it and earn one point,
-        // but we may still miss it and lose one point again.
-        // If so, we will lose 2 points for the same bird.
-        // This is worse than we don't shoot it for the second time.
-//        int currentRound = pState.getRound();
-//        if (birdsHasShootArr.size() < currentRound + 1) {
-//            boolean[] birdsShoot = new boolean[pState.getNumBirds()];
-//            for (int i = 0; i < birdsShoot.length; i++) {
-//                birdsShoot[i] = true;
-//            }
-//            birdsHasShootArr.add(birdsShoot);
-//        }
-//
-//        int shootRound = 70;
-//        if (pState.getBird(0).getSeqLength() < shootRound) {
-//            return cDontShoot;
-//        }
-//
-//        int[] lGuess = this.guess(pState, pDue);
-//        double maxProb = 0.0;
-//        int movement = Constants.MOVE_DEAD;
-//        int birdNum = Constants.SPECIES_UNKNOWN;
-//
-//        for (int i = 0; i < pState.getNumBirds(); i++) {
-//
-//        }
-//
-//        for (int i = 0; i < pState.getNumBirds(); i++) {
-//            Bird bird = pState.getBird(i);
-//
-//            if (!bird.isAlive()) {
-//                birdsHasShootArr.get(currentRound)[i] = false;
-//            }
-//
-//            if (lGuess[i] != Constants.SPECIES_UNKNOWN
-//                    && lGuess[i] != Constants.SPECIES_BLACK_STORK
-//                    && birdsHasShootArr.get(currentRound)[i]
-//                    && bird.isAlive()) {
-//                ArrayList<HMM> hmmArray = hmms[lGuess[i]];
-//
-//                for (int j = 0; j < hmmArray.size(); j++) {
-//                    for (int k = 0; k < Constants.COUNT_MOVE; k++) {
-//                        double possibility = hmmArray.get(j).getProb(bird, k);
-//                        if (possibility > maxProb) {
-//                            maxProb = possibility;
-//                            movement = k;
-//                            birdNum = i;
-//                        }
-//                    }
-//                }
-//            }
-//        }
-////        System.err.println("max pro: " + maxProb);
-//
-//        if (maxProb > 1e-55) {
-//            birdsHasShootArr.get(currentRound)[birdNum] = false;
-//            return new Action(birdNum, movement);
-//        } else {
-//            return cDontShoot;
-//        }
-        return cDontShoot;
+        if(timer >= 100)
+            timer = 0;
 
-//        int[] lGuess = this.guess(pState, pDue);
+        if(pState.getRound() == 0)
+            return cDontShoot;
+
+        if(pState.getRound() > currentRound)
+        {
+            currentRound = pState.getRound();
+            Guess = this.guess(pState, pDue);
+//            for(int species:Guess)
+//                System.err.print("species:" + species+" ");
+//            System.err.println();
+        }
+
+
+        double maxProbAll = 0.0;
+        int bestMovement = 0;
+        int birdno = 0;
+
+
+        for(int i = 0; i < pState.getNumBirds(); i++)
+        {
+            //System.err.println("---in the loop---");
+            Bird bird = pState.getBird(i);
+            if(bird.isDead())
+                continue;
+
+            int species = Guess[i];
+//            if(species == Constants.SPECIES_BLACK_STORK)
+//                continue;
+
+            HMM birdHmm = new HMM();
+            birdHmm.trainModel(bird);
+
+            double[] currentStates = birdHmm.getCurrState(bird);
+            double[] nextEmiStates = birdHmm.getNextEmiState(currentStates);
+
+            double maxProb = 0.0;
+            int movement = 0;
+            for(int j = 0; j < nextEmiStates.length; j++)
+            {
+                if(maxProb < nextEmiStates[j])
+                {
+                    maxProb = nextEmiStates[j];
+                    movement = j;
+                }
+            }
+
+            if(maxProbAll < maxProb)
+            {
+                maxProbAll = maxProb;
+                bestMovement = movement;
+                birdno = i;
+            }
+
+
+        }
+
+        return new Action(birdno, bestMovement);
+
 //        for(int i = 0; i < pState.getNumBirds(); i++)
 //        {
 //            Bird bird = pState.getBird(i);
@@ -126,18 +129,22 @@ class Player {
 //
 //        }
 
+
+        //return cDontShoot;
+
+        // return new Action(0, MOVE_RIGHT);
     }
 
     /**
      * Guess the species!
      * This function will be called at the end of each round, to give you
      * a chance to identify the species of the birds for extra points.
-     * <p>
+     *
      * Fill the vector with guesses for the all birds.
      * Use SPECIES_UNKNOWN to avoid guessing.
      *
      * @param pState the GameState object with observations etc
-     * @param pDue   time before which we must have returned
+     * @param pDue time before which we must have returned
      * @return a vector with guesses for all the birds
      */
     public int[] guess(GameState pState, Deadline pDue) {
@@ -181,8 +188,8 @@ class Player {
      * through this function.
      *
      * @param pState the GameState object with observations etc
-     * @param pBird  the bird you hit
-     * @param pDue   time before which we must have returned
+     * @param pBird the bird you hit
+     * @param pDue time before which we must have returned
      */
     public void hit(GameState pState, int pBird, Deadline pDue) {
         System.err.println("HIT BIRD!!!");
