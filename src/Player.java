@@ -158,11 +158,11 @@ class Player {
             for(int j = 0; j < hmms[i].size(); j++)
             {
                 prob = hmms[i].get(j).calculateProb(bird);
-            }
-            if(prob > maxProb)
-            {
-                maxProb = prob;
-                species = i;
+                if(prob > maxProb)
+                {
+                    maxProb = prob;
+                    species = i;
+                }
             }
         }
         if(maxProb >= 0.5)
