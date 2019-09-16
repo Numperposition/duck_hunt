@@ -107,35 +107,8 @@ class Player {
 
         }
         //System.err.println("maxProbAll = " + maxProbAll);
-        if(maxProbAll >= 0.01)
+        if(maxProbAll >= 0.7)
             return new Action(birdno, bestMovement);
-
-//        for(int i = 0; i < pState.getNumBirds(); i++)
-//        {
-//            Bird bird = pState.getBird(i);
-//            if(bird.isDead() || lGuess[i] == Constants.SPECIES_BLACK_STORK)
-//                continue;
-//            double maxProb = 0.0;
-//            double total = 0.0;
-//            int movement = 0;
-//            for(int k = 0; k < Constants.COUNT_MOVE; k++)
-//            {
-//                int guessNum = lGuess[i];
-//                if(guessNum == -1)
-//                    guessNum = (int)Math.random() * 5;
-//                for(int j = 0; j < hmms[guessNum].size(); j++)
-//                {
-//                    total += hmms[guessNum].get(j).getProb(bird, k);
-//                }
-//                if(total > maxProb)
-//                {
-//                    maxProb = total;
-//                    movement = k;
-//                }
-//            }
-//            return new Action(i, movement);
-//
-//        }
 
 
         return cDontShoot;
@@ -165,7 +138,7 @@ class Player {
                 }
             }
         }
-        if(maxProb >= 0.5)
+        if(maxProb >= 0.75)
             return species;
         return 5;
     }

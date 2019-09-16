@@ -437,7 +437,7 @@ public class HMM {
                     alfa[i][k] = alfa[i][k] / sum;
 
         }
-        return alfa[seqNum-1];   //(normalizeVector(alfa[seqNum-1]));
+        return alfa[seqNum-1];
 
     }
     public double[] getNextEmiState(double[] currentState)
@@ -475,15 +475,7 @@ public class HMM {
     }
 
 
-    private static void printMatrix(double[][] matrix){
-        for (int i = 0; i < matrix.length; i++){
-            for(int j = 0; j < matrix[0].length; j++)
-            {
-                System.err.print(matrix[i][j] + " ");
-            }
-            System.err.println();
-        }
-    }
+
 
     public double calculateProb(Bird bird)
     {
@@ -563,43 +555,6 @@ public class HMM {
         return result;
     }
 
-    /**
-     * return the possibility of next movement MOVEMENT given observation OBSERVATION
-     *
-     * @param bird     Bird
-     * @param movement int
-     * @return Double
-     */
-    public double getProb(Bird bird, int movement) {
-        T = 0;
-        for (int i = 0; i < bird.getSeqLength(); i++) {
-            if (bird.getObservation(i) != -1) {
-                observation[i] = bird.getObservation(i);
-                T++;
-            } else {
-                return 0.0;
-            }
-        }
-        observation[T] = movement;
-        T++;
-
-        double[][] initPossibility = new double[1][N];
-        for (int i = 0; i < A.length; i++) {
-            initPossibility[0][i] = observation[i] * pi[i];
-        }
-
-        double[][] finalPossibility = initPossibility;
-        for (int i = 1; i < T; i++) {
-            finalPossibility = forwardOneStep(finalPossibility, observation[i]);
-        }
-
-        double result = 0.0;
-        for (int i = 0; i < finalPossibility.length; i++) {
-            result += finalPossibility[0][i];
-        }
-
-        return result;
-    }
 
     private double[][] forwardOneStep(double[][] initPossibility, int emission) {
         double[][] nextInitPossibility = new double[1][A.length];
